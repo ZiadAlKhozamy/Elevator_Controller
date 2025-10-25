@@ -9,7 +9,7 @@ entity RequestResolver is
         current_floor: in std_logic_vector(3 downto 0);
         past_state: in state_reg
     );
-    -- in case you need to know 
+   
 end RequestResolver
 
 --  ---------------------------------------------------------------------------------------------------------
