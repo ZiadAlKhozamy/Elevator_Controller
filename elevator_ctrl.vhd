@@ -41,7 +41,7 @@ component RequestResolver is
 end component;
 begin
     --TODO:  process of taking inputs and saving them to the memory
-    
+    --
 
     --TODO: process of updating the state to next_state on the clock edge
     
