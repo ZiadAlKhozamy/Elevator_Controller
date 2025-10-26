@@ -19,7 +19,7 @@ begin
 		variable current_floor_int : integer;
         variable target_floor : integer:= 0;
     begin
-        current_floor_int <= to_integer(unsigned(current_floor));
+        current_floor_int := to_integer(unsigned(current_floor));
         target_floor := current_floor_int;
 
         if past_state = move_up then 
