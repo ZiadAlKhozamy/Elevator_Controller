@@ -93,7 +93,7 @@ SIGNAL ReqFloors : std_logic_vector(n-1 downto 0) := (n-1 downto 0 =>'0');
 --  the ReqFloors will be given to the Request resolver as a vector with 1 in the floors we need
 TYPE state_type is (idle,move_up,move_down,door_open);
 SIGNAL state_reg,state_next : state_type := idle;
-SIGNAL ResolverState :std_logic_vector(1 downto 0);
+-- SIGNAL ResolverState :std_logic_vector(1 downto 0);
 --  00 for idle
 --  01 for movingup
 --  10 for moving down
@@ -112,8 +112,6 @@ begin
     begin
     current_floor<="0000";
     op_door<='0';
-    noReq<='1';
-    --  this is to be removed
     end process
 
     -- process of updating the state to next_state on the clock edge
@@ -136,7 +134,7 @@ begin
 
     -- handle each state logic depneding on the Request resolver outputs (processed request ,noReq )
     --noReq is a flag determining whether there is a request or not
-    process(processed_request,noReq,state_reg,current_floor)
+    process(processed_request,state_reg,current_floor)
     begin 
         mv_up<='0';
         mv_down<='0';
@@ -144,15 +142,15 @@ begin
         enable<='0';
     case state_reg is 
         when idle =>
-        if(noReq = '0') then
+       
             if(processed_request > current_floor) then
                 mv_up <= '1';
                 state_next <= move_up;
-            elsif(processed_request > current_floor) then
+            elsif(processed_request < current_floor) then
                 mv_down <= '1';
                 state_next <= move_down;
             end if;
-        end if;
+        
 
         when move_up =>
             if(processed_request != current_floor) then
