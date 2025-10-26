@@ -3,28 +3,26 @@ use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 
 entity RequestResolver is
-    generic(n :integer :=10);
+    generic(n:integer :=10);
     port(
         Reqs: in std_logic_vector(n-1 downto 0);
-        clk: in std_logic;
         current_floor: in std_logic_vector(3 downto 0);
-        past_state: in std_logic; -- 1 for mv_up, 0 for mv_dn
-	resolved_request: out std_logic_vector(3 downto 0)
+		resolved_request: out std_logic_vector(3 downto 0)
     );
-   
 end RequestResolver;
 
-
 architecture RequestResolverArchitecture of RequestResolver is
-    signal current_floor_int : integer range 0 to n-1;
+	type past_state_type is (move_up,move_down);
+	signal past_state: past_state_type:= move_down;
 begin
     process(Reqs, current_floor, past_state)
-        variable target_floor : integer range 0 to n-1 := 0;
+		variable current_floor_int : integer;
+        variable target_floor : integer:= 0;
     begin
         current_floor_int <= to_integer(unsigned(current_floor));
         target_floor := current_floor_int;
 
-        if past_state = '1' then 
+        if past_state = move_up then 
             for i in current_floor_int+1 to n-1 loop
                 if Reqs(i) = '1' then
                     target_floor := i;
@@ -35,11 +33,11 @@ begin
                 for i in  current_floor_int-1  downto 0 loop
                     if Reqs(i) = '1' then
                         target_floor := i;
+						past_state <= move_down;
                         exit;
                     end if;
                 end loop;
             end if;
-
         else
             for i in current_floor_int-1  downto 0 loop
                 if Reqs(i) = '1' then
@@ -51,6 +49,7 @@ begin
                 for i in current_floor_int+1 to n-1 loop
                     if Reqs(i) = '1' then
                         target_floor := i;
+						past_state <= move_up;
                         exit;
                     end if;
                 end loop;
@@ -59,8 +58,7 @@ begin
         resolved_request <= std_logic_vector(to_unsigned(target_floor, 4));
     end process;
 end RequestResolverArchitecture;
-
-
+				
 --  ---------------------------------------------------------------------------------------------------------
 library IEEE;
 use IEEE.std_logic_1164.all;
