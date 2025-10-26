@@ -76,7 +76,7 @@ port(
     mv_up: out std_logic;
     mv_dn: out std_logic;
     op_door: out std_logic;
-    current_floor: out std_logic_vector(3 downto 0)
+    CurrentFloor: out std_logic_vector(3 downto 0)
 );
 end ElevatorController;
 
@@ -87,6 +87,8 @@ SIGNAL ReqFloors : std_logic_vector(n-1 downto 0) := (n-1 downto 0 =>'0');
 --  the ReqFloors will be given to the Request resolver as a vector with 1 in the floors we need
 TYPE state_type is (idle,move_up,move_down,door_open);
 SIGNAL state_reg,state_next : state_type := idle;
+SIGNAL processed_request: std_logic_vector(3 downto 0);
+SIGNAL current_floor: std_logic_vector(3 downto 0);
 -- SIGNAL ResolverState :std_logic_vector(1 downto 0);
 --  00 for idle
 --  01 for movingup
@@ -95,11 +97,17 @@ SIGNAL state_reg,state_next : state_type := idle;
 SIGNAL CLK1Sec: std_logic;
 SIGNAL enableCounter:std_logic:='0';
 component RequestResolver is
+    generic(n:integer :=10);
     port(
-     
+        Reqs: in std_logic_vector(n-1 downto 0);
+        current_floor: in std_logic_vector(3 downto 0);
+		resolved_request: out std_logic_vector(3 downto 0)
     );
 end component;
 begin
+
+    CurrentFloor<=current_floor;
+resolver: RequestResolver generic map(n) port map(ReqFloors,CurrentFloor,processed_request);
 
     -- Some initialized output values (may be removed)
     process 
@@ -220,7 +228,7 @@ begin
         CounterReg<= (0=>'1',others=>'0');
 end if;
 
-end process
+end process;
 
 CLKOUT1Sec<=CLK1Sec;
 
