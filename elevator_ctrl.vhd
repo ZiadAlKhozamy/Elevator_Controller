@@ -46,6 +46,7 @@ SIGNAL ResolverState :std_logic_vector(1 downto 0);
 --  10 for moving down
 --  if needed 11 for door_open
 SIGNAL CLK1Sec: std_logic;
+SIGNAL enableCounter:std_logic:='0';
 component RequestResolver is
     port(
      
@@ -59,6 +60,7 @@ begin
     current_floor<="0000";
     op_door<='0';
     noReq<='1';
+    --  this is to be removed
     end process
 
     -- process of updating the state to next_state on the clock edge
@@ -74,7 +76,7 @@ begin
     -- process of taking inputs and saving them to the memory(vector signal to be able to access it from other entities if needed)
     process(accept)
     begin 
-        if(rising_edge(accept))
+        if(rising_edge(accept)) then
             ReqFloors(to_integer(unsigned(switches)))<='1';
         end if;
     end process;
@@ -86,6 +88,7 @@ begin
         mv_up<='0';
         mv_down<='0';
         op_door<='0';
+        enable<='0';
     case state_reg is 
         when idle =>
         if(noReq = '0') then
@@ -106,6 +109,7 @@ begin
                 state_next <= door_open;
                 op_door<='1';
             end if;
+        enable<='1';
 
         when move_down =>
         if(processed_request != current_floor) then
@@ -115,8 +119,10 @@ begin
             state_next <= door_open;
             op_door<='1';
             end if;
+        enable<='1';
 
         when door_open =>
+         enable<='1';
         --Wait two seconds then go to idle ==> happens in a following process
 
     end case;
@@ -129,10 +135,12 @@ begin
            state_next<=idle;
        elsif(state_reg = move_up)
            current_floor<=current_floor+1;
+       elsif(state_reg = move_down)
+           current_floor<=current_floor-1;
        end if;
     end process;
 
- counter:Counter2Sec port map(clk,CLK1Sec);
+ counter:Counter2Sec port map(clk,enable,CLK1Sec);
 end architecture ElevController;
 
 
@@ -143,27 +151,30 @@ use IEEE.numeric_std.all;
 entity Counter2Sec is
     port(
         clk:in std_logic;
+        enable:in std_logic;
         CLKOUT1Sec: out std_logic;
     );
 end Counter;
 
 architecture count of Counter2Sec is
     SIGNAL CLK1Sec :std_logic := '0';
-    SIGNAL CounterReg:unsinged(24 downto 0) := (others=> '0');
-     
-    --25 bit is enough to simulate a 25 million count
+    SIGNAL CounterReg:unsinged(25 downto 0) := (others=> '0');
+    --26 bit is enough to simulate a 50 million count
 begin
 
-process(clk,CounterReg)
+process(clk,CounterReg,enable)
 begin
-    if(falling_edge(clk)) then
-    if(CounterReg=25000000) then
-    CounterReg<= CounterReg+1; 
+    if(falling_edge(clk) and enable=1) then
+    if(CounterReg=50000000) then
+        CLK1Sec <= not CLK1Sec;
+        CounterReg<= (0=>'1',others=>'0');
     else 
-    CLK1Sec <= not CLK1Sec;
-    CounterReg<= (0=>'1',others=>'0');
+    CounterReg<= CounterReg+1; 
     end if;
+    elsif (enable=0)then
+        CounterReg<= (0=>'1',others=>'0');
 end if;
+
 end process
 
 CLKOUT1Sec<=CLK1Sec;
