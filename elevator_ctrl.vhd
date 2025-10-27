@@ -204,16 +204,19 @@ SevenSeg<=SSD_Out;
         mv_up<='0';
         mv_dn<='0';
         op_door<='0';
-        enableCounter<='0';
+       -- enableCounter<='0';
     case state_reg is 
         when idle =>
        
             if(to_integer(unsigned(processed_request)) > to_integer(unsigned(current_floor))) then
                 mv_up <= '1';
                 state_next <= move_up;
+                enableCounter<='1';
             elsif(to_integer(unsigned(processed_request)) < to_integer(unsigned(current_floor))) then
                 mv_dn <= '1';
                 state_next <= move_down;
+                enableCounter<='1';
+            else enableCounter<='0';
             end if;
         
 
@@ -238,7 +241,7 @@ SevenSeg<=SSD_Out;
         enableCounter<='1';
 
         when door_open =>
-        
+         op_door<='1';
          if(door_closed='1') then 
          state_next<=idle;
         -- ReqFloors( to_integer(unsigned(current_floor)) ) <= '0';
