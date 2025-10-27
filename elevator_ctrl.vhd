@@ -66,7 +66,7 @@ begin
         target_floor := current_floor_int;
 
         if past_state = move_up then 
-            for i in current_floor_int+1 to n-1 loop
+            for i in current_floor_int to n-1 loop
                 if Reqs(i) = '1' then
                     target_floor := i;
                     exit;
@@ -82,7 +82,7 @@ begin
                 end loop;
             end if;
         else
-            for i in current_floor_int-1  downto 0 loop
+            for i in current_floor_int  downto 0 loop
                 if Reqs(i) = '1' then
                     target_floor := i;
                     exit;
