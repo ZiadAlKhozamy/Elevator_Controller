@@ -1,0 +1,24 @@
+vsim work.elevatorcontroller
+add wave *
+force -freeze sim:/elevatorcontroller/clk 0 0, 1 {2 ps} -r 5
+run 500 ps
+force -freeze sim:/elevatorcontroller/rst 1 0
+run 50 ps
+force -freeze sim:/elevatorcontroller/rst 0 0
+run 50 ps
+force -freeze sim:/elevatorcontroller/switches 1000 0
+run 500 ps
+force -freeze sim:/elevatorcontroller/accept 1 0
+run 10000 ps
+
+
+restart -force
+wave clear
+
+force -freeze sim:/counter2sec/clk 0 0, 1 {10000 ps} -r 20000
+force -freeze sim:/counter2sec/enable 0 0
+run 100 ns
+force -freeze sim:/counter2sec/enable 1 0
+run 500 ns
+run 4000 ms 
+
