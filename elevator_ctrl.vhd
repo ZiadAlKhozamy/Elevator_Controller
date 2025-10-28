@@ -39,8 +39,9 @@ entity RequestResolver is
     port(
         Reqs: in std_logic_vector(n-1 downto 0);
         current_floor: in std_logic_vector(3 downto 0);
-		resolved_request: out std_logic_vector(3 downto 0)
-    );
+	resolved_request: out std_logic_vector(3 downto 0);
+	IsMoving: in std_logic -- not moving -> 0, moving -> 1
+	);
 end RequestResolver;
 
 architecture RequestResolverArchitecture of RequestResolver is
@@ -48,7 +49,7 @@ architecture RequestResolverArchitecture of RequestResolver is
 	signal past_state: past_state_type:= move_down;
 begin
     process(Reqs, current_floor, past_state)
-		constant current_floor_int : integer :=to_integer(unsigned(current_floor));
+	variable current_floor_int : integer :=to_integer(unsigned(current_floor));
         variable target_floor : integer:= 0;
     begin
         -- current_floor_int := to_integer(unsigned(current_floor));
@@ -56,13 +57,19 @@ begin
 
         if past_state = move_up then 
             for i in current_floor_int to n-1 loop
-                if Reqs(i) = '1' then
+                if IsMoving = '1' and i = current_floor_int then
+					next;
+		end if;
+				if Reqs(i) = '1' then
                     target_floor := i;
                     exit;
                 end if;
             end loop;
             if target_floor = current_floor_int then
-                for i in  current_floor_int-1  downto 0 loop
+                for i in  current_floor_int  downto 0 loop
+					if IsMoving = '1' and i = current_floor_int then
+						next;
+					end if;
                     if Reqs(i) = '1' then
                         target_floor := i;
 						past_state <= move_down;
@@ -72,13 +79,19 @@ begin
             end if;
         else
             for i in current_floor_int  downto 0 loop
+				if IsMoving = '1' and i = current_floor_int then
+					next;
+				end if;
                 if Reqs(i) = '1' then
                     target_floor := i;
                     exit;
                 end if;
             end loop;
             if target_floor = current_floor_int then
-                for i in current_floor_int+1 to n-1 loop
+                for i in current_floor_int to n-1 loop
+					if IsMoving = '1' and i = current_floor_int then
+						next;
+					end if;
                     if Reqs(i) = '1' then
                         target_floor := i;
 						past_state <= move_up;
@@ -132,12 +145,14 @@ SIGNAL CLK1Sec: std_logic;
 SIGNAL enableCounter:std_logic:='0';
 SIGNAL door_closed:std_logic:='0';
 SIGNAL SSD_Out: std_logic_vector (6 downto 0);
+SIGNAL IsMoving: std_logic:='0';
 component RequestResolver is
     generic(n:integer :=10);
     port(
         Reqs: in std_logic_vector(n-1 downto 0);
         current_floor: in std_logic_vector(3 downto 0);
-		resolved_request: out std_logic_vector(3 downto 0)
+	resolved_request: out std_logic_vector(3 downto 0);
+	IsMoving: in std_logic -- not moving -> 0, moving -> 1
     );
 end component;
 component Counter2Sec is
@@ -156,8 +171,9 @@ end component;
 
 begin
 
+IsMoving <= '1' when state_reg = move_up or state_reg = move_down else '0';
     -- CurrentFloor<=current_floor;
-resolver: RequestResolver generic map (n => n) port map(ReqFloors,current_floor,processed_request);
+resolver: RequestResolver generic map (n => n) port map(ReqFloors,current_floor,processed_request, IsMoving);
 display: SSD port map(current_floor,SSD_Out);
 SevenSeg<=SSD_Out;
 
@@ -195,7 +211,7 @@ SevenSeg<=SSD_Out;
 
     -- handle each state logic depneding on the Request resolver outputs (processed request ,noReq )
     --noReq is a flag determining whether there is a request or not
-    process(processed_request,state_reg,current_floor,door_closed)
+    process(processed_request,state_reg,current_floor)
     begin 
         mv_up<='1';
         mv_dn<='1';
@@ -319,5 +335,3 @@ end process;
 CLKOUT1Sec<=CLK1Sec;
 
 end count;
-
-
