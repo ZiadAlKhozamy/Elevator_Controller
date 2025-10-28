@@ -59,10 +59,10 @@ architecture RequestResolverArchitecture of RequestResolver is
 	signal past_state: past_state_type:= move_down;
 begin
     process(Reqs, current_floor, past_state)
-		variable current_floor_int : integer;
+		constant current_floor_int : integer :=to_integer(unsigned(current_floor));
         variable target_floor : integer:= 0;
     begin
-        current_floor_int := to_integer(unsigned(current_floor));
+        -- current_floor_int := to_integer(unsigned(current_floor));
         target_floor := current_floor_int;
 
         if past_state = move_up then 
@@ -289,20 +289,35 @@ architecture count of Counter2Sec is
     --26 bit is enough to simulate a 50 million count
 begin
 
-process(clk,CounterReg,enable)
+-- process(clk,enable)
+-- begin
+--     if(falling_edge(clk) and enable='1') then
+--         if(to_integer(unsigned(CounterReg)) = 50) then
+--             CLK1Sec <= not CLK1Sec;
+--             CounterReg<= (0=>'1',others=>'0');
+--         else 
+--             CounterReg<=  to_unsigned( to_integer(CounterReg) + 1, 26 );
+--         end if;
+--         elsif (enable='0')then
+--             ClK1Sec<='0';
+--             CounterReg<= (0=>'1',others=>'0');
+-- end if;
+-- end process;
+
+
+process(clk,enable)
 begin
-    if(falling_edge(clk) and enable='1') then
+    if(enable='0') then
+           ClK1Sec<='0';
+            CounterReg<= (0=>'1',others=>'0');
+    elsif(falling_edge(clk) ) then
         if(to_integer(unsigned(CounterReg)) = 50) then
             CLK1Sec <= not CLK1Sec;
             CounterReg<= (0=>'1',others=>'0');
         else 
             CounterReg<=  to_unsigned( to_integer(CounterReg) + 1, 26 );
         end if;
-        elsif (enable='0')then
-            -- ClK1Sec<='0';
-            CounterReg<= (0=>'1',others=>'0');
-end if;
-
+    end if;
 end process;
 
 CLKOUT1Sec<=CLK1Sec;
