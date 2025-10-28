@@ -14,30 +14,19 @@ architecture SSD_Architecture of SSD is
 begin
     process(current_floor)
     begin
-        case current_floor is
-            when "0000" =>
-                SSD_Out <= "1111110";
-            when "0001" =>
-                SSD_Out <= "0110000";
-            when "0010" =>
-                SSD_Out <= "1101101";
-            when "0011" =>
-                SSD_Out <= "1111001";
-            when "0100" =>
-                SSD_Out <= "0110011";
-            when "0101" =>
-                SSD_Out <= "1011011";
-            when "0110" =>
-                SSD_Out <= "1011111";
-            when "0111" =>
-                SSD_Out <= "1110000";
-            when "1000" =>
-                SSD_Out <= "1111111";
-            when "1001" =>
-                SSD_Out <= "1111011";
-            when others =>
-                SSD_Out <= "0000001";
-        end case;
+       case current_floor is
+        when "0000" => SSD_Out <= "1000000";      
+        when "0001" => SSD_Out <= "1111001"; 
+        when "0010" => SSD_Out <= "0100100"; 
+        when "0011" => SSD_Out <= "0110000"; 
+        when "0100" => SSD_Out <= "0011001"; 
+        when "0101" => SSD_Out <= "0010010"; 
+        when "0110" => SSD_Out <= "0000010"; 
+        when "0111" => SSD_Out <= "1111000"; 
+        when "1000" => SSD_Out <= "0000000"; 
+        when "1001" => SSD_Out <= "0011000"; 
+        when others => SSD_Out <= "0111111"; 
+end case;
     end process;
 end SSD_Architecture;
 
@@ -112,6 +101,7 @@ entity ElevatorController is
 port(
     clk: in std_logic;
     rst: in std_logic;
+    -- init: in std_logic;
     switches:in std_logic_vector(3 downto 0);
     -- there are 4 switches
     accept: in std_logic;  
@@ -180,14 +170,20 @@ SevenSeg<=SSD_Out;
             state_reg<=state_next;
         end if;
     end process;
-   
+
+--    process(init)
+--    begin 
+--     if(init='1') then 
+--         current_floor<="0000";
+--     end if;
+--    end process;
 
     -- process of taking inputs and saving them to the memory(vector signal to be able to access it from other entities if needed)
     process(accept,rst,door_closed)
     begin 
-        if(accept='1') then
+        if(accept='0') then
             ReqFloors(to_integer(unsigned(switches)))<='1';
-        elsif(rst='1') then 
+        elsif(rst='0') then 
             ReqFloors<=(others=>'0');
         end if;
         if(door_closed='1' and state_reg=door_open) then
@@ -201,19 +197,19 @@ SevenSeg<=SSD_Out;
     --noReq is a flag determining whether there is a request or not
     process(processed_request,state_reg,current_floor,door_closed)
     begin 
-        mv_up<='0';
-        mv_dn<='0';
-        op_door<='0';
+        mv_up<='1';
+        mv_dn<='1';
+        op_door<='1';
        -- enableCounter<='0';
     case state_reg is 
         when idle =>
        
             if(to_integer(unsigned(processed_request)) > to_integer(unsigned(current_floor))) then
-                mv_up <= '1';
+                mv_up <= '0';
                 state_next <= move_up;
                 enableCounter<='1';
             elsif(to_integer(unsigned(processed_request)) < to_integer(unsigned(current_floor))) then
-                mv_dn <= '1';
+                mv_dn <= '0';
                 state_next <= move_down;
                 enableCounter<='1';
             else enableCounter<='0';
@@ -223,25 +219,25 @@ SevenSeg<=SSD_Out;
         when move_up =>
             if(to_integer(unsigned(processed_request)) /= to_integer(unsigned(current_floor)) ) then
                 state_next <= move_up;
-                mv_up <= '1';
+                mv_up <= '0';
             else 
                 state_next <= door_open;
-                op_door<='1';
+                op_door<='0';
             end if;
         enableCounter<='1';
 
         when move_down =>
         if(to_integer(unsigned(processed_request)) /= to_integer(unsigned(current_floor))) then
             state_next <= move_down;
-            mv_dn<='1';
+            mv_dn<='0';
         else 
             state_next <= door_open;
-            op_door<='1';
+            op_door<='0';
             end if;
         enableCounter<='1';
 
         when door_open =>
-         op_door<='1';
+         op_door<='0';
          if(door_closed='1') then 
          state_next<=idle;
         -- ReqFloors( to_integer(unsigned(current_floor)) ) <= '0';
