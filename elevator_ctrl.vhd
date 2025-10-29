@@ -115,6 +115,7 @@ entity ElevatorController is
         mv_up: out std_logic;
         mv_dn: out std_logic;
         op_door: out std_logic;
+	floor: out std_logic_vector(3 downto 0);
         SevenSeg: out std_logic_vector(6 downto 0)
     );
 end ElevatorController;
@@ -161,7 +162,7 @@ architecture ElevController of ElevatorController is
 begin
 
     IsMoving <= '1' when state_reg = move_up or state_reg = move_down else '0';
-    
+    floor <= current_floor;
     resolver: RequestResolver 
         generic map (n => n) 
         port map(
