@@ -226,7 +226,7 @@ begin
                 state_reg <= idle;
             else
                 -- Normal operation: set request when accept button is pressed
-                if accept = '0' then
+                if accept = '0' and to_integer(unsigned(switches)) <= 9 then
                     ReqFloors(to_integer(unsigned(switches))) <= '1';
                 end if;
                 
@@ -327,7 +327,7 @@ end Counter2Sec;
 architecture count of Counter2Sec is
     SIGNAL CLK1Sec : std_logic := '0';
     SIGNAL CounterReg: unsigned(25 downto 0) := (others => '0');
-    constant MAX_COUNT : integer := 50000000; -- 1 second at 50MHz
+    constant MAX_COUNT : integer := 50; -- 1 second at 50MHz
 begin
 
     process(clk, enable)
