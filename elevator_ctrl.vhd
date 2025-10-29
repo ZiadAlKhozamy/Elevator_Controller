@@ -44,58 +44,143 @@ entity RequestResolver is
 	);
 end RequestResolver;
 
-architecture RequestResolverArchitecture of RequestResolver is
-	type past_state_type is (move_up,move_down);
-	signal past_state: past_state_type:= move_down;
-begin
-    process(Reqs, current_floor, past_state)
-	variable current_floor_int : integer :=to_integer(unsigned(current_floor));
-        variable target_floor : integer:= 0;
-    begin
-        -- current_floor_int := to_integer(unsigned(current_floor));
-        target_floor := current_floor_int;
+-- architecture RequestResolverArchitecture of RequestResolver is
+-- 	type past_state_type is (move_up,move_down);
+-- 	signal past_state: past_state_type:= move_down;
+-- begin
+--     process(Reqs, current_floor, past_state)
+-- 	constant current_floor_int : integer :=to_integer(unsigned(current_floor));
+--         variable target_floor : integer:= 0;
+--     begin
+--         -- current_floor_int := to_integer(unsigned(current_floor));
+--         target_floor := current_floor_int;
 
+--         if past_state = move_up then 
+--             for i in current_floor_int to n-1 loop
+--                 if IsMoving = '1' and i = current_floor_int then
+-- 					next;
+-- 		end if;
+-- 				if Reqs(i) = '1' then
+--                     target_floor := i;
+--                     exit;
+--                 end if;
+--             end loop;
+--             if target_floor = current_floor_int then
+--                 for i in  current_floor_int  downto 0 loop
+-- 					if IsMoving = '1' and i = current_floor_int then
+-- 						next;
+-- 					end if;
+--                     if Reqs(i) = '1' then
+--                         target_floor := i;
+-- 						past_state <= move_down;
+--                         exit;
+--                     end if;
+--                 end loop;
+--             end if;
+--         else
+--             for i in current_floor_int  downto 0 loop
+-- 				if IsMoving = '1' and i = current_floor_int then
+-- 					next;
+-- 				end if;
+--                 if Reqs(i) = '1' then
+--                     target_floor := i;
+--                     exit;
+--                 end if;
+--             end loop;
+--             if target_floor = current_floor_int then
+--                 for i in current_floor_int to n-1 loop
+-- 					if IsMoving = '1' and i = current_floor_int then
+-- 						next;
+-- 					end if;
+--                     if Reqs(i) = '1' then
+--                         target_floor := i;
+-- 						past_state <= move_up;
+--                         exit;
+--                     end if;
+--                 end loop;
+--             end if;
+--         end if;
+--         resolved_request <= std_logic_vector(to_unsigned(target_floor, 4));
+--     end process;
+-- end RequestResolverArchitecture;
+architecture RequestResolverArchitecture of RequestResolver is
+    type past_state_type is (move_up, move_down);
+    signal past_state: past_state_type := move_down;
+begin
+    process(Reqs)
+    -- process(Reqs, current_floor)
+        variable current_floor_int : integer;
+        variable target_floor : integer;
+        variable flag:std_logic:= '0';
+    begin
+        current_floor_int := to_integer(unsigned(current_floor));
+        target_floor := current_floor_int;
+        flag := '0';
         if past_state = move_up then 
-            for i in current_floor_int to n-1 loop
-                if IsMoving = '1' and i = current_floor_int then
-					next;
-		end if;
-				if Reqs(i) = '1' then
-                    target_floor := i;
-                    exit;
-                end if;
-            end loop;
-            if target_floor = current_floor_int then
-                for i in  current_floor_int  downto 0 loop
-					if IsMoving = '1' and i = current_floor_int then
-						next;
-					end if;
+            -- Search upwards
+            flag := '0';
+            for i in 0 to n-1 loop
+                if i >= current_floor_int then
+                    if IsMoving = '1' and i = current_floor_int then
+                        next;
+                    end if;
                     if Reqs(i) = '1' then
                         target_floor := i;
-						past_state <= move_down;
                         exit;
+                    end if;
+                end if;
+            end loop;
+            
+            for i in 0 to n-1 loop
+                if i > current_floor_int then
+                    flag := flag or Reqs(i);
+                end if;
+            end loop; 
+            if flag = '0' then
+                -- Search downwards
+                for i in n-1 downto 0 loop
+                    if i <= current_floor_int then
+                        if IsMoving = '1' and i = current_floor_int then
+                            next;
+                        end if;
+                        if Reqs(i) = '1' then
+                            target_floor := i;
+                            past_state <= move_down;
+                            exit;
+                        end if;
                     end if;
                 end loop;
             end if;
         else
-            for i in current_floor_int  downto 0 loop
-				if IsMoving = '1' and i = current_floor_int then
-					next;
-				end if;
-                if Reqs(i) = '1' then
-                    target_floor := i;
-                    exit;
-                end if;
-            end loop;
-            if target_floor = current_floor_int then
-                for i in current_floor_int to n-1 loop
-					if IsMoving = '1' and i = current_floor_int then
-						next;
-					end if;
+            -- Similar logic for move_down state
+            flag := '0';
+            for i in n-1 downto 0 loop
+                if i <= current_floor_int then
+                    if IsMoving = '1' and i = current_floor_int then
+                        next;
+                    end if;
                     if Reqs(i) = '1' then
                         target_floor := i;
-						past_state <= move_up;
                         exit;
+                    end if;
+                end if;
+            end loop;
+            for i in n-1 downto 0 loop
+                if i < current_floor_int then
+                    flag := flag or Reqs(i);
+                end if;
+            end loop; 
+            if flag = '0' then
+                for i in 0 to n-1 loop
+                    if i >= current_floor_int then
+                        if IsMoving = '1' and i = current_floor_int then
+                            next;
+                        end if;
+                        if Reqs(i) = '1' then
+                            target_floor := i;
+                            past_state <= move_up;
+                            exit;
+                        end if;
                     end if;
                 end loop;
             end if;
@@ -197,6 +282,7 @@ SevenSeg<=SSD_Out;
     -- process of taking inputs and saving them to the memory(vector signal to be able to access it from other entities if needed)
     process(accept,rst,door_closed)
     begin 
+        --TODO: remove latches and make them separated if statements
         if(accept='0') then
             ReqFloors(to_integer(unsigned(switches)))<='1';
         elsif(rst='0') then 
@@ -211,7 +297,7 @@ SevenSeg<=SSD_Out;
 
     -- handle each state logic depneding on the Request resolver outputs (processed request ,noReq )
     --noReq is a flag determining whether there is a request or not
-    process(processed_request,state_reg,current_floor)
+    process(processed_request,state_reg,current_floor,door_closed)
     begin 
         mv_up<='1';
         mv_dn<='1';
