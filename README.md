@@ -142,10 +142,7 @@ A pure combinational decoder mapping a 4-bit floor number (0–9) to the corresp
 
 ## State Machine
 
-```
-     [<img width="1457" height="765" alt="FSM Diagram" src="https://github.com/user-attachments/assets/99208ff9-e770-4977-b43c-d98f6a9b9ed6" />
-]
-```
+![FSM Diagram](https://github.com/user-attachments/assets/01cb3fed-31f9-453a-9741-e949a87e44ec)
 
 - **idle → move_up / move_down**: triggered when `processed_request ≠ current_floor`  
 - **move_up / move_down → door_open**: triggered when `processed_request = current_floor` (arrived)  
