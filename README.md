@@ -1,5 +1,27 @@
 # Elevator Controller — VHDL Digital Design
 
+## The Problem at a Glance
+
+The two diagrams below capture the core logic this project implements — an elevator scheduling algorithm and its state transitions:
+
+![Elevator Algorithm Diagram](https://github.com/user-attachments/assets/318069d6-25bf-408b-a475-d4b10bbb5812)
+
+![Elevator State Diagram](https://github.com/user-attachments/assets/26a7e946-874a-4325-8c5b-4c1ff2a8a8b3)
+
+Looking at these diagrams, implementing this in a conventional programming language such as Python, C, or Java would be straightforward: a class with a list, a loop that scans for the next request, an enum for states, and an integer for the current floor. The entire scheduler could be expressed in a few dozen lines with variables, conditionals, and a sequential event loop that naturally maps to the algorithm's flow.
+
+**VHDL is fundamentally different.** Hardware description is not programming — it is circuit design expressed in code. Every construct you write corresponds to real logic gates, flip-flops, and interconnects that must all operate **concurrently and in sync with a clock**. This project required solving challenges that simply do not exist in software:
+
+- **No sequential variables across time** — VHDL signals update only on the *next* clock edge; reading a signal you just assigned in the same process reads the *old* value. Getting the SCAN scheduler's direction memory (`past_state`) and the FSM state to update and interact correctly across processes demanded a deep understanding of delta cycles and signal scheduling.
+- **Concurrent processes with shared state** — three parallel processes (state register, next-state logic, floor movement) all interact. Race conditions between them on signals like `door_closed`, `clear_current_floor_request`, and `enableCounter` are silent — no runtime error, just wrong hardware behaviour.
+- **Clock domain and edge sensitivity** — the floor counter runs on a divided 1 Hz clock (`CLK1Sec`) while request handling runs on 50 MHz. Crossing clock domains without metastability required careful enable-gating through `Counter2Sec` rather than a naive second clock register.
+- **Avoiding inferred latches** — any combinational process that does not assign every output in every branch synthesises an unintended latch. Every default assignment in the next-state logic process was deliberate to prevent this.
+- **No dynamic memory** — request queuing cannot use a list or array with push/pop. Requests are encoded as a 10-bit bitmask (`ReqFloors`) where bit *i* represents a pending call to floor *i*. The SCAN algorithm then operates on this bitmask using synthesisable `for` loops that unroll into combinational logic.
+
+This combination of algorithmic complexity (SCAN scheduling), real-time timing (clock division), multi-process concurrency, and strict hardware semantics makes this project a genuine demonstration of hardware design competence — not just code translation.
+
+---
+
 A fully synthesizable, FPGA-ready **10-floor elevator controller** implemented in VHDL. The design features a SCAN scheduling algorithm, a Finite State Machine (FSM) for elevator operation, a clock-divider for real-time floor timing, and a Seven-Segment Display (SSD) decoder — all verified against a 16-case testbench.
 
 ---
@@ -231,3 +253,25 @@ Elevator_Controller/
 - The generic parameter `n` (default 10) controls the number of supported floors and the width of the `ReqFloors` register. The design can be easily scaled.
 - `MAX_COUNT = 50` in simulation produces fast ticks; change to `25_000_000` for 1 Hz at 50 MHz in hardware.
 - Reset is **non-destructive to position**: the elevator stays on its current floor; only the request queue is flushed. This mirrors real elevator behaviour after a fire-alarm reset.
+
+---
+
+## CV / Portfolio Description
+
+**VHDL Elevator Controller — FPGA Digital Design Project**
+
+Designed and implemented a fully synthesizable 10-floor elevator controller in VHDL targeting an FPGA (50 MHz clock), demonstrating end-to-end hardware design competence from algorithm to verified RTL.
+
+**Key Contributions & Challenges Overcome:**
+
+- **SCAN Scheduling in Hardware** — Translated the SCAN (elevator) disk-scheduling algorithm into synthesisable VHDL. Unlike software where a sorted list and loop suffice, hardware requires the entire algorithm to be expressed as combinational logic operating on a 10-bit request bitmask, with synthesisable `for` loops that unroll into gate-level circuits. The direction-memory state (`past_state`) had to be maintained across clock cycles as a registered signal without relying on any run-time data structures.
+
+- **Multi-Process FSM with Correct Signal Semantics** — Implemented a three-process Moore FSM (state register, next-state logic, floor movement) where all processes execute concurrently. A key difficulty was VHDL's signal-update semantics: a signal assigned in one process is not visible to other processes until the next simulation delta cycle, making interaction between `door_closed`, `clear_current_floor_request`, and the state register non-trivial. Resolved by carefully separating registered (clocked) and combinational processes and using explicit default assignments to prevent inferred latches.
+
+- **Clock Domain Crossing** — The floor movement runs on a 1 Hz divided clock while request handling runs on 50 MHz. Rather than using a second clock domain (which introduces metastability risk), the clock divider is enable-gated: it is held in reset while the elevator is idle, eliminating spurious ticks and keeping all critical control logic in one clock domain.
+
+- **Non-Destructive Reset** — Implemented an active-low reset that clears only the request queue (`ReqFloors`) without altering the physical floor register, correctly modelling real-world elevator behaviour after an emergency reset. This required splitting what would be a single `if rst` branch in software into carefully ordered conditional assignments within the clocked process.
+
+- **Verification** — Authored a 16-case VHDL testbench covering single requests, multi-floor SCAN ordering, mid-motion request injection, boundary conditions (floors 0 and 9), reset during movement, invalid inputs, and full SSD display verification. A state-change monitor process logged every FSM transition to stdout for real-time debugging.
+
+**Technologies:** VHDL · ModelSim / QuestaSim · Quartus Prime · FPGA (DE-series board) · TCL scripting
